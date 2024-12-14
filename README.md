@@ -30,7 +30,7 @@ WriteLens follows a microservices architecture with the following key services:
 6. **[API Gateway](./WriteLens.ApiGateway/)**: Routes requests and centralizes authentication.
 
 ### Architecture Diagram
-img:
+![img](./assets/architecture_diagram_dark.png)
 
 ---
 
