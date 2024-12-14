@@ -24,7 +24,17 @@ public class UserController: ControllerBase
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Get the authorized user.
+    /// </summary>
+    /// <returns>Returns the authorized user.</returns>
+    /// <response code="200">Returns the user.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">User with such ID does not exists.</response>
     [HttpGet("me")]
+    [ProducesResponseType(typeof(UserResponseDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<ActionResult<UserResponseDto>> GetUserById()
     {
@@ -40,7 +50,18 @@ public class UserController: ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get user by ID.
+    /// </summary>
+    /// <param name="userId">The ID of the user to retreive.</param>
+    /// <returns>Returns the requested user.</returns>
+    /// <response code="200">Returns the user.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">User with provided ID does not exists.</response>
     [HttpGet("{userId}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<ActionResult<UserResponseDto>> GetUserById(Guid userId)
     {
@@ -55,7 +76,17 @@ public class UserController: ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update the authorized user.
+    /// </summary>
+    /// <param name="updateUserDto">User data to set.</param>
+    /// <response code="200">User updated successfully.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">User with such ID does not exists.</response>
     [HttpPatch("update")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> UpdateUserById(UpdateUserRequestDto updateUserDto)
     {
@@ -80,7 +111,16 @@ public class UserController: ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete the authorized user.
+    /// </summary>
+    /// <response code="200">User deleted successfully.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">User with such ID does not exists.</response>
     [HttpDelete("delete")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> DeleteUserById()
     {

@@ -33,14 +33,33 @@ public class DocumentController : ControllerBase
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Get available document types.
+    /// </summary>
+    /// <returns> Returns a list of document types</returns> <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     [HttpGet("types")]
+    [ProducesResponseType(typeof(List<DocumentTypeResponseDto>), 201)]
     public async Task<ActionResult<List<DocumentTypeResponseDto>>> GetDocumentTypes ()
     {
         List<DocumentType>? documentTypes = await _documentTypeService.GetAllAsync();
         return documentTypes.Select(_mapper.Map<DocumentTypeResponseDto>).ToList();
     }
 
+    /// <summary>
+    /// Create a new document.
+    /// </summary>
+    /// <param name="documentDto">The document to create.</param>
+    /// <returns>Returns created document.</returns>
+    /// <response code="201">Document created successfully.</response>
+    /// <response code="400">Non-existing document type.</response>
+    /// <response code="401">User is not authorized.</response>
     [HttpPost("create")]
+    [ProducesResponseType(typeof(DocumentResponseDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
     [Authorize]
     public async Task<ActionResult<DocumentResponseDto>> CreateDocument(CreateDocumentRequestDto documentDto)
     {
@@ -67,7 +86,20 @@ public class DocumentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get document by ID.
+    /// </summary>
+    /// <param name="documentId">The ID of the document to retreive.</param>
+    /// <returns>Returns the requested document.</returns>
+    /// <response code="200">Returns the document.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="403">User does not have access to the document.</response>
+    /// <response code="404">Document with provided ID does not exists.</response>
     [HttpGet("{documentId}")]
+    [ProducesResponseType(typeof(DocumentResponseDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<ActionResult<DocumentResponseDto>> GetDocumentById(Guid documentId)
     {
@@ -87,7 +119,18 @@ public class DocumentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get the list of user's documents.
+    /// </summary>
+    /// <param name="queryParams">Request query parameters.</param>
+    /// <returns>Returns a list of requested documents.</returns>
+    /// <response code="200">Returns the document.</response>
+    /// <response code="400">Validation error.</response>
+    /// <response code="401">User is not authorized.</response>
     [HttpGet("my")]
+    [ProducesResponseType(typeof(PaginatedListResponseDto<DocumentListItemResponseDto>), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
     [Authorize]
     public async Task<ActionResult<PaginatedListResponseDto<DocumentListItemResponseDto>>> GetDocumentsByUser([FromQuery] GetDocumentsQueryParamsDto queryParams)
     {
@@ -112,7 +155,20 @@ public class DocumentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update document metadata by ID.
+    /// </summary>
+    /// <param name="documentId">The ID of the document to update.</param>
+    /// <param name="document">Document metadata to set.</param>
+    /// <response code="200">Document meatadata updated successfully.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="403">User does not have access to the document.</response>
+    /// <response code="404">Document with provided ID does not exists.</response>
     [HttpPatch("{documentId}/update")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> UpdateDocumentById(Guid documentId, UpdateDocumentRequestDto document)
     {
@@ -136,7 +192,22 @@ public class DocumentController : ControllerBase
         } 
     }
     
+    /// <summary>
+    /// Update document content by ID.
+    /// </summary>
+    /// <param name="documentId">The ID of the document to update.</param>
+    /// <param name="document">Document content to set.</param>
+    /// <response code="200">Document content updated successfully.</response>
+    /// <response code="400">Validation error.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="403">User does not have access to the document.</response>
+    /// <response code="404">Document with provided ID does not exists.</response>
     [HttpPut("{documentId}/content/update")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> UpdateDocumentContentById(Guid documentId, UpdateDocumentContentRequestDto document)
     {
@@ -164,7 +235,19 @@ public class DocumentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete document by ID.
+    /// </summary>
+    /// <param name="documentId">The ID for the document to delete.</param>
+    /// <response code="200">Document deleted successfully.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="403">User does not have access to the document.</response>
+    /// <response code="404">Document with provided ID does not exists.</response>
     [HttpDelete("{documentId}/delete")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> DeleteDocumentById(Guid documentId)
     {
@@ -184,7 +267,19 @@ public class DocumentController : ControllerBase
         } 
     }
     
+    /// <summary>
+    /// Check if the user has access to the document.
+    /// </summary>
+    /// <param name="documentId">The ID of the document to check access to.</param>
+    /// <response code="200">User has access to the document with provided ID.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="403">User does not have access to the document.</response>
+    /// <response code="404">Document with provided ID does not exists.</response>
     [HttpGet("{documentId}/check-access")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
     [Authorize]
     public async Task<IActionResult> CheckAccessToDocumentById(Guid documentId)
     {

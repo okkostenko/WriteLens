@@ -17,6 +17,7 @@ using WriteLens.Core.Infrastructure.Repositories;
 using WriteLens.Core.Interfaces.Services;
 using WriteLens.Core.Application.Services;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 
 // * Serializers
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
@@ -146,6 +147,10 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddHttpContextAccessor();
