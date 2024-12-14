@@ -1,0 +1,311 @@
+version: '3.9'
+
+services:
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    build:
+      context: .
+      dockerfile: ./WriteLens.ApiGateway/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION_IN_MINUTES}
+    volumes:
+      - ./WriteLens.ApiGateway/ocelot.json:/app/secrets/ocelot.json 
+    ports:
+      - "5005:80"
+    networks:
+      - write-lens-network
+    depends_on:
+      - auth-service
+      - core-service
+      - accessibility-service
+      - readability-service
+
+  auth-service:
+    image: auth-service:latest
+    container_name: auth-service
+    build:
+      context: .
+      dockerfile: ./WriteLens.AuthService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION_IN_MINUTES}
+      - PostgresDbSettings__Host=postgres
+      - PostgresDbSettings__PORT=5432
+      - PostgresDbSettings__Username=${POSTGRES_USERNAME}
+      - PostgresDbSettings__Password=${POSTGRES_PASSWORD}
+      - PostgresDbSettings__Database=${POSTGRES_DATABASE}
+    ports:
+      - "5001:80"
+    networks:
+      - write-lens-network
+    depends_on:
+      - postgres  
+
+  core-service:
+    image: core-service:latest
+    container_name: core-service
+    build:
+      context: .
+      dockerfile: ./WriteLens.Core/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__ExpirationInMinutes=${JWT_EXPIRATION_IN_MINUTES}
+      - PostgresDbSettings__Host=postgres
+      - PostgresDbSettings__PORT=5432
+      - PostgresDbSettings__Username=${POSTGRES_USERNAME}
+      - PostgresDbSettings__Password=${POSTGRES_PASSWORD}
+      - PostgresDbSettings__Database=${POSTGRES_DATABASE}
+      - MongoDbSettings__DatabaseName=${MONGO_DATABASE}
+      - MongoDbSettings__Host=mongo
+      - MongoDbSettings__Port=27017
+      - MongoDbSettings__User=${MONGO_USER}
+      - MongoDbSettings__Password=${MONGO_PASSWORD}
+      - MONGO_DB_INITIAL_DATA_PATH=/app/data/mongo/initial_data
+    ports:
+      - "5002:80"
+    networks:
+      - write-lens-network
+    volumes:
+      - ./WriteLens.Core/Infustructure/Data/MongoDb/InitialData:/app/data/mongo/initial_data
+    depends_on:
+     - mongo
+     - postgres
+
+  accessibility-service:
+    image: accessibility-service:latest
+    container_name: accessibility-service
+    build:
+      context: .
+      dockerfile: ./WriteLens.AccessibilityService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ApplicationSettings__CoreUrl=http://core-service
+      - MLTASSettings__MLTextAnalysisServiceUrl=http://ml-text-processing-service:8000
+      - MLTASSettings__ApiKey=${MLTAS_API_KEY}
+      - MLTASSettings__ValidAudience=${MLTAS_VALID_AUDIENCE}
+      - MongoDbSettings__DatabaseName=${MONGO_DATABASE}
+      - MongoDbSettings__Host=mongo
+      - MongoDbSettings__Port=27017
+      - MongoDbSettings__User=${MONGO_USER}
+      - MongoDbSettings__Password=${MONGO_PASSWORD}
+      - RedisSettings__ConnectionString=core-redis:6379,abortConnect=false
+      - RabbitMQSettings__Host=as-rabbitmq
+      - RabbitMQSettings__Username=${AS_RABBIT_MQ_USER}
+      - RabbitMQSettings__Password=${AS_RABBIT_MQ_PASSWORD}
+    ports:
+      - "5003:80"
+    networks:
+      - accessibility-service-network
+      - write-lens-network
+    depends_on:
+      - core-service
+      - ml-text-processing-service
+      - as-rabbitmq
+      - core-redis
+      - mongo
+
+  readability-service:
+    image: readability-service:latest
+    container_name: readability-service
+    build:
+      context: .
+      dockerfile: ./WriteLens.ReadabilityService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ApplicationSettings__CoreUrl=http://core-service
+      - MongoDbSettings__DatabaseName=${MONGO_DATABASE}
+      - MongoDbSettings__Host=mongo
+      - MongoDbSettings__Port=27017
+      - MongoDbSettings__User=${MONGO_USER}
+      - MongoDbSettings__Password=${MONGO_PASSWORD}
+      - RedisSettings__ConnectionString=core-redis:6379,abortConnect=false
+      - RabbitMQSettings__Host=rs-rabbitmq
+      - RabbitMQSettings__Username=${RS_RABBIT_MQ_USER}
+      - RabbitMQSettings__Password=${RS_RABBIT_MQ_PASSWORD}
+    ports:
+      - "5004:80"
+    networks:
+      - write-lens-network
+    depends_on:
+      - core-service
+      - rs-rabbitmq
+      - core-redis
+      - mongo
+  
+  ml-text-processing-service:
+    image: ml-text-processing-service:latest
+    container_name: ml-text-processing-service
+    build:
+      context: ./WriteLens.MLTextProcessingService
+      dockerfile: Dockerfile
+    command:  gunicorn --bind 0.0.0.0:8000 --workers 4 -k uvicorn.workers.UvicornWorker main:app
+    environment:
+      - ENV=dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_ORGANIZATION_ID=${OPENAI_ORGANIZATION_ID}
+      - PROMPT_TEMPLATES_PATH=/app/secrets/prompt_templates
+      - VALID_API_KEYS_MAPPING_PATH=/app/secrets/api_keys.json
+      - ALLOWED_ORIGINS=${MLTAS_ALLOWED_ORIGINS}
+      - CELERY_BROKER_URL=redis://mltas-redis:6379/0 
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./WriteLens.MLTextProcessingService/data/prompt_templates:/app/secrets/prompt_templates
+      - ./WriteLens.MLTextProcessingService/data/api_keys.json:/app/secrets/api_keys.json
+    networks:
+      - accessibility-service-network
+    depends_on:
+      - mltas-redis
+
+  mltas-celery:
+    image: mltas-celery:latest
+    container_name: mltas-celery
+    build:
+      context: ./WriteLens.MLTextProcessingService
+      dockerfile: Dockerfile
+    command: celery -A task_queue.task_queue worker --loglevel=info
+    environment:
+      - ENV=dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_ORGANIZATION_ID=${OPENAI_ORGANIZATION_ID}
+      - PROMPT_TEMPLATES_PATH=/app/secrets/prompt_templates
+      - VALID_API_KEYS_MAPPING_PATH=/app/secrets/api_keys.json
+      - ALLOWED_ORIGINS=${MLTAS_ALLOWED_ORIGINS}
+      - CELERY_BROKER_URL=redis://mltas-redis:6379/0
+    volumes:
+      - ./WriteLens.MLTextProcessingService/data/prompt_templates:/app/secrets/prompt_templates
+      - ./WriteLens.MLTextProcessingService/data/api_keys.json:/app/secrets/api_keys.json
+    depends_on:
+      - mltas-redis
+    networks:
+      - accessibility-service-network
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - write-lens-network
+  
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - write-lens-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com  # Login email for pgAdmin
+      - PGADMIN_DEFAULT_PASSWORD=adminpassword   # Password for pgAdmin
+    ports:
+      - "8080:80"  # Map pgAdmin to host port 8080
+    depends_on:
+      - postgres
+    networks:
+      - write-lens-network
+
+  core-redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - write-lens-network
+
+  mltas-redis:
+    image: redis:latest
+    ports:
+      - "6380:6379"
+    networks:
+      - accessibility-service-network
+
+  as-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: as-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${AS_RABBIT_MQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${AS_RABBIT_MQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - as_rabbitmq_data:/var/lib/as-rabbitmq/data
+      - as_rabbitmq_logs:/var/log/as-rabbitmq/data
+    networks:
+      - write-lens-network
+  
+  rs-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rs-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RS_RABBIT_MQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RS_RABBIT_MQ_PASSWORD}
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rs_rabbitmq_data:/var/lib/rs-rabbitmq/data
+      - rs_rabbitmq_logs:/var/log/rs-rabbitmq/data
+    networks:
+      - write-lens-network
+
+  mongo-express:
+      image: mongo-express:latest
+      container_name: mongo-express
+      environment:
+        - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_USER}
+        - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_PASSWORD}
+        - ME_CONFIG_MONGODB_SERVER=mongo
+        - ME_CONFIG_BASICAUTH_USERNAME=admin
+        - ME_CONFIG_BASICAUTH_PASSWORD=admin
+      ports:
+        - "8081:8081"
+      networks:
+        - write-lens-network
+      depends_on:
+        - mongo
+
+volumes:
+  as_rabbitmq_data:
+  as_rabbitmq_logs:
+  rs_rabbitmq_data:
+  rs_rabbitmq_logs:
+  mongo-data:
+  postgres-data:
+
+networks:
+  write-lens-network:
+    name: write-lens-network
+    driver: bridge
+  accessibility-service-network:
+    name: accessibility-service-network
+    driver: bridge
+
+  
+

@@ -1,0 +1,144 @@
+# ============================================
+# GENERAL IGNORE
+# ============================================
+.DS_Store
+*.log
+*.tmp
+*.bak
+Thumbs.db
+
+# ============================================
+# .NET / C# IGNORE
+# ============================================
+
+# Build and Debug artifacts
+bin/
+obj/
+out/
+*.user
+*.suo
+*.sln.docstates
+
+# Visual Studio specific
+.vscode/
+.vs/
+*.rsuser
+*.userosscache
+*.sln.ide
+*.sln.docstates
+
+# Rider / JetBrains IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+packages/
+*.lock.json
+
+# Dotnet specific
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/project.assets.json
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Secrets and Config
+secrets.json
+appsettings.Development.json
+appsettings.local.json
+*.key
+*.crt
+
+# Coverage reports
+TestResults/
+coverage/
+*.coverlet.*
+
+# Temporary files
+**/backup/
+*.tmp
+*.bak
+
+# Docker
+docker-compose.override.yml
+
+# ============================================
+# PYTHON IGNORE
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+*.env
+
+# Python dependencies
+*.egg
+*.egg-info/
+dist/
+build/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Python tests
+.tox/
+.nox/
+.coverage
+coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+
+# Mypy static analysis
+.mypy_cache/
+
+# PyInstaller
+*.spec
+*.pyz
+*.pyz-compressed
+*.tmp
+
+# Logs
+*.log
+
+# ============================================
+# GENERAL ENVIRONMENT VARIABLES / SECRETS
+# ============================================
+
+.env
+.env.development
+.env.local
+.env.*.example
+
+# ============================================
+# MONGO / REDIS DATA (if persisted locally)
+# ============================================
+mongo-data/
+redis-data/
+
+# ============================================
+# POSTMAN / INSOMNIA COLLECTIONS
+# ============================================
+*.postman_collection.json
+*.postman_environment.json
+
+# ============================================
+# PROMETHEUS AND GRAFANA DATA
+# ============================================
+prometheus-data/
+grafana-data/

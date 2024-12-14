@@ -1,0 +1,98 @@
+[
+    {
+        "_id": "60684192-ac63-481d-81da-a4b652e236cb",
+        "type_name": "Formal Professional",
+        "description": "Professional or official documents requiring clarity, precision, and formality.",
+        "ruleset": {
+            "readability_threshold": 0.7,
+            "complexity_penalty": 0.3,
+            "max_sentence_length": 25,
+            "allow_passive_voice": false,
+            "allow_jargon": false,
+            "jargon_penalty": 0.5,
+            "max_complexity_score": 0.8,
+            "min_section_readability_score": 0.6,
+            "max_flags_per_section": 3
+        }
+    },
+    {
+        "_id": "d5fbcbfe-065a-4b01-aa69-2a8e20f06d86",
+        "type_name": "Informal Personal",
+        "description": "Casual communications, such as personal emails or messages to friends.",
+        "ruleset": {
+            "readability_threshold": 0.5,
+            "complexity_penalty": 0.1,
+            "max_sentence_length": 40,
+            "allow_passive_voice": true,
+            "allow_jargon": true,
+            "jargon_penalty": 0.0,
+            "max_complexity_score": 1.0,
+            "min_section_readability_score": 0.4,
+            "max_flags_per_section": 5
+        }
+    },
+    {
+        "_id": "9206009a-75b3-4e7c-98a2-58bd12cef3cf",
+        "type_name": "Creative Expressive",
+        "description": "Expressive content, such as short stories, poems, or novels.",
+        "ruleset": {
+            "readability_threshold": 0.6,
+            "complexity_penalty": 0.2,
+            "max_sentence_length": 50,
+            "allow_passive_voice": true,
+            "allow_jargon": true,
+            "jargon_penalty": 0.0,
+            "max_complexity_score": 1.0,
+            "min_section_readability_score": 0.4,
+            "max_flags_per_section": 7
+        }
+    },
+    {
+        "_id": "2fbf1f56-7d10-4fbd-b353-ad03dd16857f",
+        "type_name": "Academic/Technical",
+        "description": "Educational or technical documents requiring precision and readability.",
+        "ruleset": {
+            "readability_threshold": 0.7,
+            "complexity_penalty": 0.4,
+            "max_sentence_length": 30,
+            "allow_passive_voice": false,
+            "allow_jargon": true,
+            "jargon_penalty": 0.2,
+            "max_complexity_score": 0.9,
+            "min_section_readability_score": 0.6,
+            "max_flags_per_section": 4
+        }
+    },
+    {
+        "_id": "379f5527-c343-4079-9a81-5469be02e72e",
+        "type_name": "Pop-Science/General Knowledge",
+        "description": "General knowledge content aimed at a broad audience with minimal jargon.",
+        "ruleset": {
+            "readability_threshold": 0.8,
+            "complexity_penalty": 0.2,
+            "max_sentence_length": 35,
+            "allow_passive_voice": true,
+            "allow_jargon": false,
+            "jargon_penalty": 0.3,
+            "max_complexity_score": 0.8,
+            "min_section_readability_score": 0.7,
+            "max_flags_per_section": 3
+        }
+    },
+    {
+        "_id": "891b3714-e206-4bcd-a941-e41fa0967db1",
+        "type_name": "Default",
+        "description": "Default type with balanced rules for general-purpose analysis.",
+        "ruleset": {
+            "readability_threshold": 0.65,
+            "complexity_penalty": 0.2,
+            "max_sentence_length": 30,
+            "allow_passive_voice": true,
+            "allow_jargon": true,
+            "jargon_penalty": 0.1,
+            "max_complexity_score": 0.85,
+            "min_section_readability_score": 0.5,
+            "max_flags_per_section": 4
+        }
+    }
+]

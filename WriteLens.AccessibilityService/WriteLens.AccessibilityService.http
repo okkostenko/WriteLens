@@ -1,0 +1,6 @@
+@WriteLens.AccessibilityService_HostAddress = http://localhost:5015
+
+GET {{WriteLens.AccessibilityService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,6 @@
+@WriteLens.AuthService_HostAddress = http://localhost:5120
+
+GET {{WriteLens.AuthService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,126 @@
+{
+    "Routes": [
+      {
+        "DownstreamPathTemplate": "/api/v1/auth/{everything}",
+        "DownstreamScheme": "http",
+        "DownstreamHostAndPorts": [
+          {
+            "Host": "auth-service",
+            "Port": 80
+          }
+        ],
+        "UpstreamPathTemplate": "/auth/{everything}",
+        "UpstreamHttpMethod": [ "Post" ],
+        "SwaggerKey": "auth"
+      },
+      {
+        "DownstreamPathTemplate": "/api/v1/users/{everything}",
+        "DownstreamScheme": "http",
+        "DownstreamHostAndPorts": [
+          {
+            "Host": "core-service",
+            "Port": 80
+          }
+        ],
+        "UpstreamPathTemplate": "/users/{everything}",
+        "UpstreamHttpMethod": [ "Get", "Post", "Patch", "Delete" ],
+        "AuthenticationOptions": {
+          "AuthenticationProviderKey": "Bearer"
+        },
+        "SwaggerKey": "core"
+      },
+      {
+        "DownstreamPathTemplate": "/api/v1/documents/{everything}",
+        "DownstreamScheme": "http",
+        "DownstreamHostAndPorts": [
+          {
+            "Host": "core-service",
+            "Port": 80
+          }
+        ],
+        "UpstreamPathTemplate": "/documents/{everything}",
+        "UpstreamHttpMethod": [ "Get", "Post", "Patch", "Put", "Delete" ],
+        "AuthenticationOptions": {
+          "AuthenticationProviderKey": "Bearer"
+        },
+        "SwaggerKey": "core"
+      },
+      {
+        "DownstreamPathTemplate": "/api/v1/readability/{everything}",
+        "DownstreamScheme": "http",
+        "DownstreamHostAndPorts": [
+          {
+            "Host": "readability-service",
+            "Port": 80
+          }
+        ],
+        "UpstreamPathTemplate": "/readability/{everything}",
+        "UpstreamHttpMethod": [ "Get", "Post" ],
+        "AuthenticationOptions": {
+          "AuthenticationProviderKey": "Bearer"
+        },
+        "SwaggerKey": "readability"
+      },
+      {
+        "DownstreamPathTemplate": "/api/v1/accessibility/{everything}",
+        "DownstreamScheme": "http",
+        "DownstreamHostAndPorts": [
+          {
+            "Host": "accessibility-service",
+            "Port": 80
+          }
+        ],
+        "UpstreamPathTemplate": "/accessibility/{everything}",
+        "UpstreamHttpMethod": [ "Get", "Post" ],
+        "AuthenticationOptions": {
+          "AuthenticationProviderKey": "Bearer"
+        },
+        "SwaggerKey": "accessibility"
+      }
+    ],
+    "GlobalConfiguration": {
+      "BaseUrl": "http://api-gateway"
+    },
+    "SwaggerEndPoints": [
+      {
+        "Key": "auth",
+        "Config": [
+          {
+            "Name": "Auth API",
+            "Version": "v1",
+            "Url": "http://auth-service/swagger/v1/swagger.json"
+          }
+        ]
+      },
+      {
+        "Key": "core",
+        "Config": [
+          {
+            "Name": "Core API",
+            "Version": "v1",
+            "Url": "http://core-service/swagger/v1/swagger.json"
+          }
+        ]
+      },
+      {
+        "Key": "readability",
+        "Config": [
+          {
+            "Name": "Readability API",
+            "Version": "v1",
+            "Url": "http://readability-service/swagger/v1/swagger.json"
+          }
+        ]
+      },
+      {
+        "Key": "accessibility",
+        "Config": [
+          {
+            "Name": "Accessibility API",
+            "Version": "v1",
+            "Url": "http://accessibility-service/swagger/v1/swagger.json"
+          }
+        ]
+      }
+    ]
+}

@@ -1,0 +1,1 @@
+from .endpoints import accessibility_router
