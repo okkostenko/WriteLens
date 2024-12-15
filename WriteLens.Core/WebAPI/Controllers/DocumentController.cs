@@ -37,7 +37,7 @@ public class DocumentController : ControllerBase
     /// Get available document types.
     /// </summary>
     /// <returns> Returns a list of document types</returns>
-    /// response code="200">Returns list of types.</response>
+    /// <response code="200">Returns list of types.</response>
     [HttpGet("types")]
     [ProducesResponseType(typeof(List<DocumentTypeResponseDto>), 200)]
     public async Task<ActionResult<List<DocumentTypeResponseDto>>> GetDocumentTypes ()
