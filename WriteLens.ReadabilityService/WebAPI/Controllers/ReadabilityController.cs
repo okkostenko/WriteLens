@@ -1,8 +1,5 @@
 using AutoMapper;
 using MassTransit;
-using MassTransit.Middleware;
-using MassTransit.SagaStateMachine;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using WriteLens.Shared.Exceptions.AnalysisExceptions;
 using WriteLens.Shared.Exceptions.DocumentExceptions;
@@ -33,7 +30,21 @@ public class ReadabilityController : ControllerBase
         _authService = authService;
     }
 
+    /// <summary>
+    /// Create a request to analyze the document's readability.
+    /// </summary>
+    /// <param name="documentId">The ID of the document.</param>
+    /// <returns>Returns the ID of the analysis task to track.</returns>
+    /// <response code="200">Returns the ID of the analysis task.</response>
+    /// <response code="400">
+    /// Nothing to analyze error:
+    /// no updates were made to the document content.
+    /// </response>
+    /// <response code="401">User is not authorized.</response>
     [HttpPost("document/{documentId}/analyze")]
+    [ProducesResponseType(typeof(RequestAcceptedResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
     public async Task<ActionResult<RequestAcceptedResponseDto>> Analyze(Guid documentId)
     {
         try
@@ -69,7 +80,20 @@ public class ReadabilityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get the status of the analysis task.
+    /// </summary>
+    /// <param name="taskId">The id of the task.</param>
+    /// <returns>Returns the status of the task.</returns>
+    /// <response code="200">Returns the status of the analysis task.</response>
+    /// <response code="400">Validation error.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">Task with provided ID does not exist.</response>
     [HttpGet("task/{taskId}/status")]
+    [ProducesResponseType(typeof(TaskStatusResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
     public async Task<ActionResult<TaskStatusResponseDto>> GetTaskStatus(Guid taskId)
     {
         try
@@ -91,7 +115,22 @@ public class ReadabilityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get the result of the analysis.
+    /// </summary>
+    /// <param name="taskId">The id of the task.</param>
+    /// <returns>Returns the result of the analysis.</returns>
+    /// <response code="200">Returns the result of the analysis.</response>
+    /// <response code="400">The analysis is still in progress.</response>
+    /// <response code="401">User is not authorized.</response>
+    /// <response code="404">Task with provided ID does not exist.</response>
+    /// <response code="500">Task with provided ID does not exist.</response>
     [HttpGet("task/{taskId}/result")]
+    [ProducesResponseType(typeof(ReadabilityAnalysisResultResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
     public async Task<ActionResult<ReadabilityAnalysisResultResponseDto>> GetTaskResult(Guid taskId)
     {
         try
