@@ -11,6 +11,7 @@ using WriteLens.Auth.Interfaces.Services;
 using WriteLens.Auth.Application.Services;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication;
+using System.Reflection;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -105,6 +106,10 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddHttpContextAccessor();
