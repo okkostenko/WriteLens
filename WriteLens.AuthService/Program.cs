@@ -24,6 +24,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Configuration.AddUserSecrets<Program>();
 
+// * Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // * Authentication
 var jwtSettings = builder.Configuration
     .GetSection(nameof(JwtSettings))
@@ -117,6 +122,9 @@ builder.Services.AddHttpContextAccessor();
 builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application is starting...");
 
 app.UseAuthentication();
 app.UseAuthorization();

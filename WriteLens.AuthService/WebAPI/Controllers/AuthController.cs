@@ -13,11 +13,16 @@ public class AuthController: ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IMapper _mapper;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, IMapper mapper)
+    public AuthController(
+        IAuthService authService,
+        IMapper mapper,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
         _mapper = mapper;
+        _logger = logger;
     }
 
     /// <summary>
@@ -39,11 +44,20 @@ public class AuthController: ControllerBase
         try
         {
             string authToken = await _authService.AuthenticateAsync(_mapper.Map<LoginUserCommand>(loginDto));
+
+            _logger.LogInformation($"User with email '{loginDto}' logged in successfully");
             return new AuthenticateResponseDto(authToken);
         }
         catch (UnauthorizedAccessException exc)
         {
+            _logger.LogWarning(
+                $"Unauthorized attempt to login by user with email '{loginDto.Email}': {exc.Message}");
             return Unauthorized(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to login user with email '{loginDto.Email}': {exc.Message}", exc.StackTrace);
+            return StatusCode(500, "Intermal server error occured");
         }
     }
 
@@ -66,11 +80,21 @@ public class AuthController: ControllerBase
         try
         {
             string authToken = await _authService.RegisterAsync(_mapper.Map<RegisterUserCommand>(registerDto));
+
+            _logger.LogInformation($"User with email '{registerDto.Email}' registered successfully");
             return new AuthenticateResponseDto(authToken);
         }
         catch (UnauthorizedAccessException exc)
         {
+            _logger.LogWarning(
+                $"Unauthorized attempt to register by user with email '{registerDto.Email}': {exc.Message}");
             return Unauthorized(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace(
+                $"Failed to register user with email '{registerDto.Email}': {exc.Message}", exc.StackTrace);
+            return StatusCode(500, "Intermal server error occured");
         }
     }
 }
