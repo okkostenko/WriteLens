@@ -20,7 +20,20 @@ public class AuthController: ControllerBase
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Login user by email and password.
+    /// </summary>
+    /// <param name="loginDto">Login data.</param>
+    /// <returns>JWT Token.</returns>
+    /// <response code="200">Returns JWT token for the further authentication.</response>
+    /// <response code="400">Payload validation error.</response>
+    /// <response code="401">
+    /// Authorization error: provided email doesn't exist or the password is wrong.
+    /// </response>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthenticateResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
     public async Task<ActionResult<AuthenticateResponseDto>> Login(LoginRequestDto loginDto)
     {
         try
@@ -34,7 +47,20 @@ public class AuthController: ControllerBase
         }
     }
 
+    /// <summary>
+    /// Register new user.
+    /// </summary>
+    /// <param name="registerDto">Registration data.</param>
+    /// <returns>JWT Token.</returns>
+    /// <response code="200">Returns JWT token for the further authentication.</response>
+    /// <response code="400">Payload validation error.</response>
+    /// <response code="401">
+    /// Authorization error: user with provided email already exists.
+    /// </response>
     [HttpPost("register")]
+    [ProducesResponseType(typeof(AuthenticateResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
     public async Task<ActionResult<AuthenticateResponseDto>> Register(RegisterRequestDto registerDto)
     {
         try
