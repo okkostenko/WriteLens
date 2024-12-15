@@ -126,6 +126,7 @@ public class AccessibilityController : ControllerBase
     /// <response code="404">Task with provided ID does not exist.</response>
     /// <response code="500">Task with provided ID does not exist.</response>
     [HttpGet("task/{taskId}/result")]
+    [ProducesResponseType(typeof(AccessibilityAnalysisResultResponseDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
