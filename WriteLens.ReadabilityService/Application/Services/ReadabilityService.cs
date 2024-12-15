@@ -17,37 +17,46 @@ public class ReadabilityService : IReadabilityService
     private readonly IDocumentScoreRepository _documentScoreRepository;
     private readonly IDocumentTypeCache _documentTypeCache;
     private readonly DaleChalWordList _daleChalWordList;
-    public readonly IMapper _mapper;
+    private readonly IMapper _mapper;
+    private readonly ILogger<ReadabilityService> _logger;
 
     public ReadabilityService(
         IDocumentContentRepository documentContentRepository,
         IDocumentScoreRepository documentScoreRepository,
         IDocumentTypeCache documentTypeCache,
         IMapper mapper,
-        DaleChalWordList daleChalWordList
-        )
+        DaleChalWordList daleChalWordList,
+        ILogger<ReadabilityService> logger)
     {
         _documentContentRepository = documentContentRepository;
         _documentScoreRepository = documentScoreRepository;
         _documentTypeCache = documentTypeCache;
-        _mapper = mapper;
         _daleChalWordList = daleChalWordList;
+        _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<DocumentContentDocumentScore> AnalyzeAsync(Guid documentId)
     {
+        _logger.LogInformation($"Started analysis of document '{documentId}'");
+
         DocumentContent documentContent = await GetDocumentContentAsync(documentId);
         DocumentTypeRuleset analysisRuleset = await RetrieveDocumentTypeRulesetFromCacheAsync(documentContent.TypeId);
         DocumentContentScore documentContentScore = await GetDocumentContentScoreAsync(documentId);
 
         List<DocumentContentSection> awaitingAnalysis = FilterSectionsAwaitingAnalysis(documentContent.Sections);
+        _logger.LogInformation($"Retrieved and filtered data to analyze document '{documentId}'");
+
         List<TextAnalysisResult> analyzedContentSections = await AnalyzeSections(analysisRuleset, awaitingAnalysis);
+        _logger.LogInformation($"Analyzed content sections of document '{documentId}'");
         
         DocumentContentLength documentLength = GetDocumentContentLength(documentContent);
         documentContentScore = UpdateDocumentScores(documentLength, documentContentScore, analyzedContentSections);
+        _logger.LogInformation($"Calculated score of document '{documentId}'");
         
         await _documentScoreRepository.UpdateSingleByDocumentIdAsync(documentId, documentContentScore);
         await MarkSectionsAsAnalyzed(documentId, awaitingAnalysis);
+        _logger.LogInformation($"Updated document '{documentId}' record in database");
 
         return documentContentScore.DocumentScore;
     }

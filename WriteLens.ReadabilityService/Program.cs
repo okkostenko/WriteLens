@@ -23,10 +23,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-
 // * Serializers
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
+
 
 // * Config
 builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection(nameof(ApplicationSettings)));
@@ -138,10 +138,14 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application is starting...");
+
 using (var scope = app.Services.CreateScope())
 {
     var documentTypeCache = scope.ServiceProvider.GetRequiredService<IDocumentTypeCache>();
     await documentTypeCache.RefreshCacheAsync();
+    logger.LogInformation("Document types preloaded successfully.");
 }
 
 // Configure the HTTP request pipeline.

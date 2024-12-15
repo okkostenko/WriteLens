@@ -21,13 +21,20 @@ public class ReadabilityController : ControllerBase
     private readonly ITaskCache _taskCache;
     private readonly IMapper _mapper;
     private readonly IAuthService _authService;
+    private readonly ILogger<ReadabilityController> _logger;
     
-    public ReadabilityController(IPublishEndpoint publisher, ITaskCache taskCache, IMapper mapper, IAuthService authService)
+    public ReadabilityController(
+        IPublishEndpoint publisher,
+        ITaskCache taskCache,
+        IMapper mapper,
+        IAuthService authService,
+        ILogger<ReadabilityController> logger)
     {
         _publisher = publisher;
         _taskCache = taskCache;
         _mapper = mapper;
         _authService = authService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -60,6 +67,9 @@ public class ReadabilityController : ControllerBase
                     DocumentId = documentId
                 });
             }
+
+            _logger.LogInformation(
+                $"Readability analysis of document '{documentId}' accepted successfully.");
             return Accepted(new RequestAcceptedResponseDto
             {
                 TaskId = documentId
@@ -70,13 +80,23 @@ public class ReadabilityController : ControllerBase
             exc is AccessDeniedException
         )
         {
+            _logger.LogWarning(
+                @$"Unauthorized attempt to analyze readabilit of the document '{documentId}': {exc.Message}");
             return Unauthorized(exc.Message);
         }
         catch (Exception exc) when (
             exc is UnsupportedDocumentTypeException ||
             exc is NothigToAnalyzeException)
         {
+            _logger.LogError(
+                $"Failed to analyze readability of the document '{documentId}': {exc.Message}");
             return BadRequest(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogError(
+                $"Failed to analyze readability of the document '{documentId}': {exc.Message}");
+            return StatusCode(500, "Internal server error occured");
         }
     }
 
@@ -100,6 +120,8 @@ public class ReadabilityController : ControllerBase
         {
             await _authService.Authorize(taskId);
             TaskModel task = await _taskCache.GetTaskAsync<TaskModel>(taskId);
+
+            _logger.LogInformation($"Task '{taskId}' status retreived successfully");
             return _mapper.Map<TaskStatusResponseDto>(task);
         }
         catch (Exception exc) when (
@@ -107,11 +129,21 @@ public class ReadabilityController : ControllerBase
             exc is AccessDeniedException
         )
         {
+            _logger.LogWarning(
+                @$"Unauthorized attempt to retreive the status of task '{taskId}': {exc.Message}");
             return Unauthorized(exc.Message);
         }
         catch (TaskNotFoundException exc)
         {
+            _logger.LogError(
+                $"Failed to retreive the status of task '{taskId}': {exc.Message}");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogError(
+                $"Failed to retreive the status of task '{taskId}': {exc.Message}");
+            return StatusCode(500, "Internal server error occured");
         }
     }
 
@@ -143,11 +175,16 @@ public class ReadabilityController : ControllerBase
             }
             if (task.Status == "Failed")
             {
+                _logger.LogError(
+                    $"Failed to retrieve task '{taskId}' analysis result: {task.ErrorMessage}");
                 if (task.StatusCode == 400)
                     return BadRequest(task.ErrorMessage);
                 else
                     return StatusCode(500, task.ErrorMessage);
             }
+
+            _logger.LogInformation(
+                $"Task '{taskId}' analysis result retreived successfully.");
             return _mapper.Map<ReadabilityAnalysisResultResponseDto>(task.Result);
         }
         catch (Exception exc) when (
@@ -155,11 +192,21 @@ public class ReadabilityController : ControllerBase
             exc is AccessDeniedException
         )
         {
+            _logger.LogWarning(
+                @$"Unauthorized attempt to retreive the analysis result of task '{taskId}': {exc.Message}");
             return Unauthorized(exc.Message);
         }
         catch (TaskNotFoundException exc)
         {
+            _logger.LogError(
+                $"Failed to retreive the analysis result of task '{taskId}': {exc.Message}");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogError(
+                $"Failed to retreive the analysis result of task '{taskId}': {exc.Message}");
+            return StatusCode(500, "Internal server error occured");
         }
     }
 }

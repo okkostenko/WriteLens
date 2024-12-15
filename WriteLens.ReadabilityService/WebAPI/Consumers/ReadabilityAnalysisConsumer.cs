@@ -1,13 +1,10 @@
-using AutoMapper;
 using MassTransit;
-using WriteLens.Readability.Application.Services;
 using WriteLens.Shared.Exceptions.AnalysisExceptions;
 using WriteLens.Shared.Exceptions.DocumentExceptions;
 using WriteLens.Shared.Interfaces.Caching;
 using WriteLens.Readability.Interfaces.Services;
 using WriteLens.Readability.Models.DomainModels;
 using WriteLens.Readability.WebAPI.DTOs.Requests;
-using WriteLens.Readability.WebAPI.DTOs.Responses;
 using WriteLens.Shared.Models;
 
 namespace WriteLens.Readability.WebAPI.Consumers;
@@ -30,6 +27,8 @@ public class  ReadabilityAnalysisConsumer : IConsumer<ReadabilityAnalysisRequest
         try
         {
             await UpdateTaskStatusToProcessing(context.Message.TaskId);
+            _logger.LogInformation(
+                $"Analysis process of task '{context.Message.TaskId}' for document '{context.Message.DocumentId}' started");
 
             var documentId = context.Message.DocumentId;
             DocumentContentDocumentScore analysisResult = await _readabilityService.AnalyzeAsync(documentId);
@@ -45,7 +44,6 @@ public class  ReadabilityAnalysisConsumer : IConsumer<ReadabilityAnalysisRequest
         catch (Exception exc)
         {
             await UpdateTaskStatusToFailed(context.Message.TaskId, 500, exc.Message);
-            _logger.LogError(exc, "An exception occured while analyzing document");
         }
     }
 
@@ -68,6 +66,7 @@ public class  ReadabilityAnalysisConsumer : IConsumer<ReadabilityAnalysisRequest
             ErrorMessage = null,
             Result = analysisResult
         });
+        _logger.LogInformation($"Task '{taskId}' processed successfully.");
     }
 
     private async Task UpdateTaskStatusToFailed(Guid taskId, int statusCode, string errorMessage)
@@ -80,5 +79,7 @@ public class  ReadabilityAnalysisConsumer : IConsumer<ReadabilityAnalysisRequest
             ErrorMessage = errorMessage,
             Result = null
         });
+        _logger.LogInformation(
+            $"Task '{taskId}' processing failed with status code '{statusCode}': {errorMessage}.");
     }
 }
