@@ -33,6 +33,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Configuration.AddUserSecrets<Program>();
 
+// * Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // * Authentication
 var jwtSettings = builder.Configuration
     .GetSection(nameof(JwtSettings))
@@ -159,6 +164,9 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application is starting...");
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -169,16 +177,18 @@ using (var scope = app.Services.CreateScope())
     {
         context.Database.Migrate();
     }
+    logger.LogInformation("PostgreSQL database migrated successfully.");
 
     var mongoDbClient = services.GetRequiredService<IMongoClient>();
     await MongoDbMigrationRunner.RunMigrations(
         mongoDbClient.GetDatabase(mongoDbSettings?.DatabaseName)
     );
-    Console.WriteLine("MongoDb Migrations Run Successful");
+    logger.LogInformation("MongoDB database migrated successful.");
     
     // Refresh Cache
     var documentTypeCache = services.GetRequiredService<IDocumentTypeCache>();
     await documentTypeCache.RefreshCacheAsync();
+    logger.LogInformation("Document types preloaded successfully.");
 }
 
 

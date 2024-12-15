@@ -22,15 +22,18 @@ public class DocumentController : ControllerBase
     private readonly IDocumentService _documentService;
     private readonly IDocumentTypeService _documentTypeService;
     private readonly IMapper _mapper;
+    private readonly ILogger<DocumentController> _logger;
 
     public DocumentController(
         IDocumentService documentService,
         IDocumentTypeService documentTypeService,
-        IMapper mapper)
+        IMapper mapper,
+        ILogger<DocumentController> logger)
     {
         _documentService = documentService;
         _documentTypeService = documentTypeService;
         _mapper = mapper;
+        _logger = logger;
     }
 
     /// <summary>
@@ -67,6 +70,8 @@ public class DocumentController : ControllerBase
             Document document = await _documentService.CreateSingleAsync(
                 new Guid(userId),
                 _mapper.Map<CreateDocumentCommand>(documentDto));
+            
+            _logger.LogInformation($"User {userId} created new document '{document.Id}'.");
 
             return CreatedAtAction(
                 nameof(GetDocumentById),
@@ -76,11 +81,17 @@ public class DocumentController : ControllerBase
         }
         catch (DocumentTypeNotFoundException exc)
         {
+            _logger.LogWarning($"Failed to find document type with ID '{documentDto.TypeId}'");
             return BadRequest(new
             {
                 error = exc.Message,
                 exceptionType = exc.GetType().Name
             });
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to create new document for user '{userId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -105,15 +116,25 @@ public class DocumentController : ControllerBase
         try
         {
             Document document = await _documentService.GetSingleByIdAsync(new Guid(userId), documentId);
+            
+            _logger.LogInformation($"User '{userId}' fetched document '{documentId}'");
+
             return _mapper.Map<DocumentResponseDto>(document);
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to FETCH document '{documentId}' by user '{userId}'.");
             return Forbid(exc.Message);
         }
         catch (DocumentNotFoundException exc)
         {
+            _logger.LogError($"Failed to fetch document '{documentId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to fetch document '{documentId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -134,6 +155,10 @@ public class DocumentController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
+            _logger.LogWarning(
+                @$"Request with invalid query parameters
+                Page = {queryParams.Page}, Size = {queryParams.Size}, Search = {queryParams.Search},
+                SortBy = {queryParams.SortBy}, SortDirection = {queryParams.SortDirection}");
             return BadRequest(ModelState);
         }
 
@@ -145,11 +170,19 @@ public class DocumentController : ControllerBase
                 _mapper.Map<DocumentQueryParams>(queryParams)
             );
 
+            _logger.LogInformation($"User '{userId}' fetched their documents.");
             return _mapper.Map<PaginatedListResponseDto<DocumentListItemResponseDto>>(documents);
         }
         catch (InvalidSortingFiledException exc)
         {
+            _logger.LogError(@$"Failed to fetch documents with invalid sorting field
+                SortBy = {queryParams.SortBy}, SortDirection = {queryParams.SortDirection}");
             return BadRequest(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to fetch documents of user '{userId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -177,17 +210,25 @@ public class DocumentController : ControllerBase
                 new Guid(userId),
                 documentId,
                 _mapper.Map<UpdateDocumentCommand>(document));
-                
+            
+            _logger.LogInformation($"User '{userId}' updated the metadata of the document '{documentId}'");
             return Ok();
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to UPDATE document '{documentId}' metadata by user '{userId}'.");
             return Forbid(exc.Message);
         }
         catch (DocumentNotFoundException exc)
         {
+            _logger.LogError($"Failed to update document '{documentId}' metadata that does not exist");
             return NotFound(exc.Message);
-        } 
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to update document '{documentId}' metadata by user '{userId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
+        }
     }
     
     /// <summary>
@@ -217,19 +258,28 @@ public class DocumentController : ControllerBase
                 documentId,
                 _mapper.Map<UpdateDocumentCommand>(document));
 
+            _logger.LogInformation($"User '{userId}' updated the content of the document '{documentId}'");
             return Ok();
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to UPDATE document '{documentId}' content by user '{userId}'.");
             return Forbid(exc.Message);
         }
         catch (DocumentNotFoundException exc)
         {
+            _logger.LogError($"Failed to update document '{documentId}' content that does not exist");
             return NotFound(exc.Message);
         } 
         catch (DocumentException exc)
         {
+            _logger.LogError($"Failed to update document '{documentId}': {exc.Message}.");
             return BadRequest(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to update document '{documentId}' content by user '{userId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -253,15 +303,24 @@ public class DocumentController : ControllerBase
         try
         {
             await _documentService.DeleteSingleById(new Guid(userId), documentId);
+
+            _logger.LogInformation($"User '{userId}' deleted document '{documentId}'");
             return Ok();
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to DELETE document '{documentId}' by user '{userId}'.");
             return Forbid(exc.Message);
         }
         catch (DocumentNotFoundException exc)
         {
+            _logger.LogError($"Failed to delete document '{documentId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to delete document '{documentId}' by user '{userId}': {exc.Message}.", exc.StackTrace);
+            return StatusCode(500, "An internal server error occurred.");
         } 
     }
     

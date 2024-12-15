@@ -17,11 +17,16 @@ public class UserController: ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
+    private readonly ILogger<UserController> _logger;
 
-    public UserController(IUserService userService, IMapper mapper)
+    public UserController(
+        IUserService userService,
+        IMapper mapper,
+        ILogger<UserController> logger)
     {
         _userService = userService;
         _mapper = mapper;
+        _logger = logger;
     }
 
     /// <summary>
@@ -42,11 +47,18 @@ public class UserController: ControllerBase
         try
         {
             User user = await _userService.GetSingleByIdAsync(new Guid(userId));
+            _logger.LogInformation($"User '{userId}' fetched their data");
             return _mapper.Map<UserResponseDto>(user);
         }
         catch (UserNotFoundException exc)
         {
+            _logger.LogError($"Failed to fetch authorized user '{userId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to fetch authorized user with ID '{userId}': {exc.Message}. {exc.StackTrace}");
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -68,11 +80,19 @@ public class UserController: ControllerBase
         try
         {
             User user = await _userService.GetSingleByIdAsync(userId);
+
+            _logger.LogInformation($"Fetched user with ID '{userId}'");
             return _mapper.Map<UserResponseDto>(user);
         }
         catch (UserNotFoundException exc)
         {
+            _logger.LogError($"Failed to fetch user '{userId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to fetch user with ID '{userId}': {exc.Message}. {exc.StackTrace}");
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -95,19 +115,29 @@ public class UserController: ControllerBase
         {
             vaildateUserAllowedToPerformOperation(userId, nameof(UpdateUserById));
             await _userService.UpdateSingleByIdAsync(userId, _mapper.Map<UpdateUserCommand>(updateUserDto));
+
+            _logger.LogInformation($"User '{userId}' updated successfully");
             return Ok();
         }
         catch (UnauthorizedAccessException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to update user '{userId}'");
             return Unauthorized(exc.Message);
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to update user '{userId}'");
             return StatusCode(403, new {Message = exc.Message});
         }
         catch (UserNotFoundException exc)
         {
+            _logger.LogError($"Failed to update user '{userId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to update user with ID '{userId}': {exc.Message}. {exc.StackTrace}");
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
@@ -129,19 +159,29 @@ public class UserController: ControllerBase
         {
             vaildateUserAllowedToPerformOperation(userId, nameof(DeleteUserById));
             await _userService.DeleteSingleByIdAsync(userId);
+
+            _logger.LogInformation($"User '{userId}' delete successfully");
             return Ok();
         }
         catch (UnauthorizedAccessException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to delete user '{userId}': {exc.Message}.");
             return Unauthorized(exc.Message);
         }
         catch (AccessDeniedException exc)
         {
+            _logger.LogWarning($"Unauthorized attempt to delete user '{userId}': {exc.Message}.");
             return Forbid(exc.Message);
         }
         catch (UserNotFoundException exc)
         {
+            _logger.LogError($"Failed to delete user '{userId}' that does not exist");
             return NotFound(exc.Message);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogTrace($"Failed to delete user with ID '{userId}': {exc.Message}. {exc.StackTrace}");
+            return StatusCode(500, "An internal server error occurred.");
         }
     }
 
