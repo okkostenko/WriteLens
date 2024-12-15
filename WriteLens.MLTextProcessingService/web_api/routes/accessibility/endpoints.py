@@ -20,6 +20,18 @@ accessibility_router = APIRouter(prefix='/accessibility')
     response_model=TaskStatusResponseDto
 )
 async def get_status(task_id):
+    """Get the status of the text analysis.
+
+    Parameters
+    ----------
+    task_id : UUID string
+        The ID of the task.
+
+    Returns
+    -------
+    TaskResultResponseDto
+        The status of the analysis.
+    """
     task_result = AsyncResult(task_id, app=task_queue)
     return TaskStatusResponseDto(status=task_result.status)
 
@@ -30,6 +42,25 @@ async def get_status(task_id):
     response_model=TaskResultResponseDto
 )
 async def get_result(task_id):
+    """Get the result of the analysis.
+
+    Parameters
+    ----------
+    task_id : UUID string
+        The ID of the task.
+
+    Returns
+    -------
+    TaskResultResponseDto
+        The result of the analysis.
+
+    Raises
+    ------
+    ApiKeyDoesNotExist
+        The provided API key is wrong.
+    TextAnalysisException
+        An error occured during the analysis process.
+    """
     task_result = AsyncResult(task_id)
     if issubclass(type(task_result.result), Exception):
         raise task_result.result
@@ -45,9 +76,22 @@ async def get_result(task_id):
     response_class=JSONResponse,
     response_model = TaskCreatedResponseDto
 )
-async def analyze_Accessibility(
+async def analyze_accessibility(
     body: AnalyzeTextAccessabilityRequestDto
 ):
+    """Request to determine the text
+    accessibility rules violation flags
+
+    Parameters
+    ----------
+    body : AnalyzeTextAccessabilityRequestDto
+        The text to analyze.
+
+    Returns
+    -------
+    TaskCreatedResponseDto
+        The ID of the analysis task.
+    """
     task = create_task.delay(
         body.text,
         [flag.value for flag in body.flags]
