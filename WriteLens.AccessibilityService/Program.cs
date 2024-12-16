@@ -1,6 +1,5 @@
 using System.Reflection;
 using MassTransit;
-using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -136,10 +135,14 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application is starting...");
+
 using (var scope = app.Services.CreateScope())
 {
     var documentTypeCache = scope.ServiceProvider.GetRequiredService<IDocumentTypeCache>();
     await documentTypeCache.RefreshCacheAsync();
+    logger.LogInformation("Document types preloaded successfully.");
 }
 
 // Configure the HTTP request pipeline.

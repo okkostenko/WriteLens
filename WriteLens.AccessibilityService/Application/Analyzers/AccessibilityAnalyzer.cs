@@ -8,23 +8,30 @@ namespace WriteLens.Accessibility.Application.Analyzers;
 
 public class AccessibilityAnalyzer : IAnalyzer
 {
-    private const int MAX_WAITING_ITERATIONS = 5;
-    
     private readonly DocumentTypeRuleset _ruleset;
-    private readonly MLTextAnalysisAnalyzer _client;
+    private readonly MLTextAnalysisAnalyzer _analyzer;
+    private readonly ILogger<AccessibilityAnalyzer> _logger;
 
-    public AccessibilityAnalyzer(DocumentTypeRuleset ruleset, IHttpContextAccessor context, MLTASSettings mltasSettings)
+    public AccessibilityAnalyzer(
+        DocumentTypeRuleset ruleset,
+        MLTASSettings mltasSettings,
+        ILoggerFactory loggerFactory)
     {
         _ruleset = ruleset;
-        _client = new MLTextAnalysisAnalyzer(context, mltasSettings);
+        _analyzer = new MLTextAnalysisAnalyzer(mltasSettings, loggerFactory);
+        _logger = loggerFactory.CreateLogger<AccessibilityAnalyzer>();
     }
 
     public async Task<TextAnalysisResult> AnalyzeAsync(Guid taskId, string text)
     {
-        MLTextAnalysisResult result = await _client.AnalyzeAsync(text);
+        _logger.LogInformation($"Accessibility analysis of section '{taskId}' started.");
+
+        MLTextAnalysisResult result = await _analyzer.AnalyzeAsync(text);
         List<MLTextAnalysisResultFlag> flags = await FilterFlags(result);
+        _logger.LogInformation($"Determined flags for section '{taskId}'.");
 
         decimal score = await CalculateScore(flags);
+        _logger.LogInformation($"Calculated accessibility score for section '{taskId}'.");
 
         return new TextAnalysisResult
         {

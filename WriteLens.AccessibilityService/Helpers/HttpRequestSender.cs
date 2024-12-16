@@ -5,19 +5,23 @@ using WriteLens.Accessibility.Models.ApplicationModels;
 public class HttpRequestSender
 {
     private readonly HttpClient _httpClient;
-    public HttpRequestSender()
+    private readonly ILogger<HttpRequestSender> _logger;
+    public HttpRequestSender(ILoggerFactory loggerFactory)
     {
         _httpClient = new HttpClient();
+        _logger = loggerFactory.CreateLogger<HttpRequestSender>();
     }
     public async Task<HttpResponseMessage?> SendRequestAsync(HttpRequestConfig requestConfig)
     {
+        _logger.LogInformation($"Sending {requestConfig.Method} request to url {requestConfig.Uri}...");
         var request = new HttpRequestMessage(requestConfig.Method, requestConfig.Uri);
         AddBody(requestConfig.Body, request);
         AddHeaders(requestConfig.Headers, request);
 
         var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
-
+        
+        _logger.LogInformation($"Request with method {requestConfig.Method} sent successfully to url {requestConfig.Uri}.");
         return response;
     }
 

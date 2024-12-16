@@ -9,22 +9,26 @@ namespace WriteLens.Accessibility.Application.Analyzers;
 public class MLTextAnalysisAnalyzer
 {
     private const int MAX_WAITING_ITERATIONS = 5;
-    private readonly IHttpContextAccessor _context;
     private readonly MLTASSettings _mltasSettings;
     private readonly HttpRequestSender _requestSender;
+    private readonly ILogger<MLTextAnalysisAnalyzer> _logger;
 
-    public MLTextAnalysisAnalyzer(IHttpContextAccessor context, MLTASSettings mltasSettings)
+    public MLTextAnalysisAnalyzer(MLTASSettings mltasSettings, ILoggerFactory loggerFactory)
     {
-        _context = context;
-        _requestSender = new HttpRequestSender();
+        _requestSender = new HttpRequestSender(loggerFactory);
         _mltasSettings = mltasSettings;
+        _logger = loggerFactory.CreateLogger<MLTextAnalysisAnalyzer>();
     }
 
     public async Task<MLTextAnalysisResult> AnalyzeAsync(string text)
     {
+        _logger.LogInformation($"Requesting analysis from ML Text Processing Service.");
         string processId = await RequestAnalysis(text);
+
+        _logger.LogInformation($"Awaiting result from ML Text Processing Service.");
         await WaitUntilProcessed(processId);
         MLTextAnalysisResult result = await GetAnalysisResultAsync(processId);
+        _logger.LogInformation($"Retrieved result from ML Text Processing Service.");
         return result;
     }
 

@@ -9,7 +9,6 @@ using WriteLens.Accessibility.Models.ApplicationModels;
 using WriteLens.Shared.Models;
 using WriteLens.Accessibility.Settings;
 using Microsoft.Extensions.Options;
-using WriteLens.Accessibility.Application.Analyzers.Interfaces;
 namespace WriteLens.Accessibility.Application.Services;
 
 public class AccessibilityService : IAccessibilityService
@@ -20,8 +19,8 @@ public class AccessibilityService : IAccessibilityService
     private readonly IDocumentTypeCache _documentTypeCache;
     private readonly IHttpContextAccessor _context;
     private readonly MLTASSettings _mltasSettings;
-    private readonly IAnalyzer _analyzer;
-    public readonly IMapper _mapper;
+    private readonly ILogger<AccessibilityService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     public AccessibilityService(
         IDocumentContentRepository documentContentRepository,
@@ -30,8 +29,8 @@ public class AccessibilityService : IAccessibilityService
         IDocumentTypeCache documentTypeCache,
         IHttpContextAccessor context,
         IOptions<MLTASSettings> mltasSettings,
-        IMapper mapper
-    )
+        ILogger<AccessibilityService> logger,
+        ILoggerFactory loggerFactory)
     {
         _documentContentRepository = documentContentRepository;
         _documentScoreRepository = documentScoreRepository;
@@ -39,29 +38,38 @@ public class AccessibilityService : IAccessibilityService
         _documentTypeCache = documentTypeCache;
         _context = context;
         _mltasSettings = mltasSettings.Value;
-        _mapper = mapper;
+        _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     public async Task<AccessibilityAnalysisResult> AnalyzeAsync(Guid documentId)
     {
+        _logger.LogInformation($"Started analysis of document '{documentId}'");
+
         DocumentContent documentContent = await GetDocumentContentAsync(documentId);
         DocumentTypeRuleset analysisRuleset = await RetrieveDocumentTypeRulesetFromCacheAsync(documentContent.TypeId);
         DocumentContentScore documentContentScore = await GetDocumentContentScoreAsync(documentId);
 
         List<DocumentContentSection> awaitingAnalysis = FilterSectionsAwaitingAnalysis(documentContent.Sections);
+        _logger.LogInformation($"Retrieved and filtered data to analyze document '{documentId}'");
+
         List<TextAnalysisResult> analyzedContentSections = await AnalyzeSections(analysisRuleset, awaitingAnalysis);
-        
+        _logger.LogInformation($"Analyzed content sections of document '{documentId}'");
+
         DocumentContentLength documentLength = GetDocumentContentLength(documentContent);
         documentContentScore = UpdateDocumentScores(documentLength, documentContentScore, analyzedContentSections);
+        _logger.LogInformation($"Calculated score of document '{documentId}'");
 
         List<DocumentContentFlag> newFlags = CreateDocumentFlags(documentId, analyzedContentSections, documentContent.Sections);
+        _logger.LogInformation($"Created document '{documentId}' content flags");
 
         await _documentScoreRepository.UpdateSingleByDocumentIdAsync(documentId, documentContentScore);
         await UpdateDocumentFlags(awaitingAnalysis, newFlags);
         await MarkSectionsAsAnalyzed(documentId, awaitingAnalysis);
+        _logger.LogInformation($"Updated document '{documentId}' record in database");
 
         List<DocumentContentFlag>? documentContentFlags = await _documentFlagsRepository.GetManyByDocumentIdAsync(documentId);
-
+        
         return new AccessibilityAnalysisResult
         {
             Score = documentContentScore.DocumentScore,
@@ -98,7 +106,7 @@ public class AccessibilityService : IAccessibilityService
 
     private async Task<List<TextAnalysisResult>> AnalyzeSections(DocumentTypeRuleset ruleset, List<DocumentContentSection> sections)
     {
-        var analyzer = new AccessibilityAnalyzer(ruleset, _context, _mltasSettings);
+        var analyzer = new AccessibilityAnalyzer(ruleset, _mltasSettings, _loggerFactory);
 
         var tasks = sections.Select(s => analyzer.AnalyzeAsync(s.Id, s.Content));
         IEnumerable<TextAnalysisResult>? results = await Task.WhenAll(tasks);
